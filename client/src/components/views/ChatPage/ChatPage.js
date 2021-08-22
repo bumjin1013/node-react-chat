@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Form, Icon, Input, Button, Row, Col } from 'antd';
 import { io } from 'socket.io-client';
@@ -12,6 +12,13 @@ function ChatPage(props) {
     const socket = io("http://localhost:5000"); //connet client-to-server
     const [ChatMessage, setChatMessage] = useState("")
 
+    const messagesEnd = useRef(null);
+
+    const renderCards = () => 
+        chat.chats && chat.chats.map((chats) => (
+            <ChatCard key={chats._id} {...chats}/>
+    ));
+
     useEffect(() => {
         dispatch(getChats())
    
@@ -19,17 +26,20 @@ function ChatPage(props) {
             console.log(messageFromBackEnd);
             dispatch(afterPostMessage(messageFromBackEnd))
         })
+    }, [])
 
-    }, []);
+    useEffect(() => {
+
+        messagesEnd.current.scrollIntoView({behavior: 'smooth'});
+  
+      }, [renderCards()])
+
 
     const handleSearchCHange = (event) => {
         setChatMessage(event.target.value);
     }
 
-    const renderCards = () => 
-        chat.chats && chat.chats.map((chats) => (
-            <ChatCard key={chats._id} {...chats}/>
-        ));
+    
 
     const submitChatMessage = (event) => {
         event.preventDefault();
@@ -60,15 +70,14 @@ function ChatPage(props) {
         </div>
 
         <div style={{ maxWidth: '800px', margin: '0 auto' }}>
-            <div className="infinite-container">
+            <div className="infinite-container" style={{ height: '500px', overflowY:' scroll' }}>
                 {chat && (
                     <div>{renderCards()}</div>
                 )} 
             <div
-                ref={el => {
-                    
-                }}
+                ref={messagesEnd}
                 style={{ float: "left", clear: "both" }}
+                
             />
             </div>
 
