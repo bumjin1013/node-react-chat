@@ -16,13 +16,9 @@ const io = require("socket.io")(server, {
 
 const config = require("./config/key");
 
-// const mongoose = require("mongoose");
-// mongoose
-//   .connect(config.mongoURI, { useNewUrlParser: true })
-//   .then(() => console.log("DB connected"))
-//   .catch(err => console.error(err));
-
 const { Chat } = require("./models/Chat");
+const { auth } = require("./middleware/auth");
+
 const mongoose = require("mongoose");
 const connect = mongoose.connect(config.mongoURI,
   {
@@ -32,6 +28,25 @@ const connect = mongoose.connect(config.mongoURI,
   .then(() => console.log('MongoDB Connected...'))
   .catch(err => console.log(err));
 
+
+const multer = require("multer");
+const fs = require("fs");
+
+var storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, 'uploads/')
+  },
+  filename: function (req, file, cb) {
+    cb(null, `${Date.now()}_${file.originalname}`)
+  },
+  // fileFilter: (req, file, cb) => {
+  //   const ext = path.extname(file.originalname)
+  //   if (ext !== '.jpg' && ext !== '.png' && ext !== '.mp4') {
+  //     return cb(res.status(400).end('only jpg, png, mp4 is allowed'), false);
+  //   }
+  //   cb(null, true)
+  // }
+})
 
 
 //to not get any deprecation warning or error
@@ -44,6 +59,18 @@ app.use(cookieParser());
 
 app.use('/api/users', require('./routes/users'));
 app.use('/api/chat', require('./routes/chat'));
+
+var upload = multer({ storage: storage }).single("file")
+
+app.post("/api/chat/uploadfiles", auth ,(req, res) => {
+  upload(req, res, err => {
+    if(err) {
+      return res.json({ success: false, err })
+    }
+    return res.json({ success: true, url: res.req.file.path });
+  })
+});
+
 
 io.on("connection", (socket) => {
   socket.on("Input Chat Message", msg => {

@@ -5,6 +5,8 @@ import { io } from 'socket.io-client';
 import moment from 'moment';
 import { getChats, afterPostMessage } from '../../../_actions/chat_actions';
 import ChatCard from './Section/ChatCard';
+import axios from 'axios';
+import Dropzone from 'react-dropzone';
 
 function ChatPage(props) {
     const dispatch = useDispatch();
@@ -62,6 +64,46 @@ function ChatPage(props) {
         setChatMessage("");
     }
 
+    const onDrop = (files) => {
+        console.log(files)
+
+
+        if (props.user.userData && !props.user.userData.isAuth) {
+            return alert('Please Log in first');
+        }
+
+
+
+        let formData = new FormData;
+
+        const config = {
+            header: { 'content-type': 'multipart/form-data' }
+        }
+
+        formData.append("file", files[0])
+
+        axios.post('api/chat/uploadfiles', formData, config)
+            .then(response => {
+                if (response.data.success) {
+                    let chatMessage = response.data.url;
+                    let userId = props.user.userData._id
+                    let userName = props.user.userData.name;
+                    let userImage = props.user.userData.image;
+                    let nowTime = moment();
+                    let type = "VideoOrImage"
+
+                    socket.emit("Input Chat Message", {
+                        chatMessage,
+                        userId,
+                        userName,
+                        userImage,
+                        nowTime,
+                        type
+                    });
+                }
+            })
+    }
+
     return (
 
     <div>
@@ -95,7 +137,18 @@ function ChatPage(props) {
                         />
                     </Col>
                     <Col span={2}>
-                                
+                        <Dropzone onDrop={onDrop}>
+                            {({ getRootProps, getInputProps }) => (
+                                <section>
+                                    <div {...getRootProps()}>
+                                        <input {...getInputProps()} />
+                                            <Button>
+                                                <Icon type="upload" />
+                                            </Button>
+                                    </div>
+                                </section>
+                            )}
+                         </Dropzone>       
                     </Col>
 
                     <Col span={4}>
